@@ -45,6 +45,8 @@ public class TimeUIScript : MonoBehaviour
         {
             //時間をリセット
             hoursCount -= oneDay;
+            //次のステージへ
+            GameManager.gameStatus = GameManager.GameStatus.Next;
         }
         if ((int)minutesCount != (int)oldMinutesCount)
         {
