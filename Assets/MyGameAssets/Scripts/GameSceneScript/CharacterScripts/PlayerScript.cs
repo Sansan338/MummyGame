@@ -5,16 +5,16 @@ using UnityEngine.UIElements;
 
 public class PlayerScript : MonoBehaviour
 {
-    //プレイヤーのステータス
-    public static int playerHP;　//プレイヤーの体力
-    public float walkSpeed = 8.0f;      //歩く速度
-    public float defaultSpeed = 8.0f;   //歩く速度を元に戻すための
-    public float buffSpeed = 11.0f;     //バフ状態速度
-    public float slowSpeed = 5.0f;    　//スロウ状態速度
-    public float rotateSpeed = 10.0f;   //回転速度
-    public static bool isDie;    //死んでいるか
-    Vector3 moveDirection;       //座標
+    public PlayerMoveScript playerMoveScript;
 
+    public static int playerHP;　//プレイヤーの体力
+    float p_walkSpeed;
+    float p_defaultSpeed;
+    float p_buffSpeed;
+    float p_slowSpeed;
+    float p_rotateSpeed;
+
+    public static bool isDie;    //死んでいるか
 
     public int hitDamage = 20;          //ゴーストに当たった時のダメージ
 
@@ -30,10 +30,10 @@ public class PlayerScript : MonoBehaviour
     public float blindTime = 2.5f;                 //黒ゴーストに当たった時のブラインド時間
 
     //衝突判定
-    private bool isBlue = false;    //青
-    private bool isYellow = false;   //黄色
-    private bool isBlack = false;   //黒
-    private bool isWhite = false;   //白
+    public bool IsBlue { get; set; } = false;    //青
+    public bool IsYellow { get; set; } = false;   //黄色
+    public bool IsBlack { get; set; } = false;   //黒
+    public bool IsWhite { get; set; } = false;   //白
 
     //衝突カウント
     public static int redCount;      //赤に当たったか
@@ -88,31 +88,9 @@ public class PlayerScript : MonoBehaviour
 
     void Update()
     {
-        //WASDもしくは矢印キーの入力情報を取得
-        float moveX = Input.GetAxis("Horizontal");
-        float moveZ = Input.GetAxis("Vertical");
-        moveDirection = new Vector3(moveX,0,moveZ);
-        //正規化
-        moveDirection.Normalize();
-        //黄の効果時間以外は常に移動可能
-        if (isYellow == false)
-        {
-            transform.position += moveDirection * walkSpeed * Time.deltaTime;
-        }
-        //プレイヤーを移動
-        transform.forward = Vector3.Slerp(transform.forward, moveDirection, Time.deltaTime * rotateSpeed);
-        //プレイヤーが移動しているなら
-        if (moveZ != 0 || moveX != 0)
-        {
-            //歩きアニメーションを有効化
-            playerAnimator.SetBool("isMoving", true);
-        }
-        //プレイヤーが移動していないなら
-        else
-        {
-            //歩きアニメーションを無効化
-            playerAnimator.SetBool("isMoving", false);
-        }
+        //プレイヤーのスピードを参照
+        p_walkSpeed = playerMoveScript.WalkSpeed;
+        p_defaultSpeed = playerMoveScript.DefaultSpeed;
 
         //HPが0になると
         if (playerHP <= 0)
@@ -135,22 +113,22 @@ public class PlayerScript : MonoBehaviour
 
         //バフデバフ効果
         //青
-        if (isBlue == true)
+        if (IsBlue == true)
         {
             HitBlueGhost();
         }
         //黄
-        if (isYellow == true)
+        if (IsYellow == true)
         {
             HitYellowGhost();
         }
         //白
-        if (isWhite == true)
+        if (IsWhite == true)
         {
             HitWhiteGhost();
         }
         //黒
-        if (isBlack == true)
+        if (IsBlack == true)
         {
             HitBlackGhost();
         }
@@ -179,7 +157,7 @@ public class PlayerScript : MonoBehaviour
             //プレイヤーのステータスをリセット
             ResetPlayerState();
             //青に当たりましたよ
-            isBlue = true;
+            IsBlue = true;
 
             //体力マイナス
             HitMobDamage();
@@ -196,7 +174,7 @@ public class PlayerScript : MonoBehaviour
             //プレイヤーのステータスをリセット
             ResetPlayerState();
             //黄に当たりましたよ
-            isYellow = true;
+            IsYellow = true;
 
             //体力マイナス
             HitMobDamage();
@@ -213,7 +191,7 @@ public class PlayerScript : MonoBehaviour
             //プレイヤーのステータスをリセット
             ResetPlayerState();
             //白に当たりましたよ
-            isWhite = true;
+            IsWhite = true;
 
             //パーティクルを生成and再生and破壊
             BuffDebuffParticle(buffParticle,buffTime);
@@ -225,7 +203,7 @@ public class PlayerScript : MonoBehaviour
         if(collider.gameObject.tag == "Black")
         {
             //黒に当たりましたよ
-            isBlack = true;
+            IsBlack = true;
 
             //黒に当たった回数カウント
             blackCount++;
@@ -236,11 +214,11 @@ public class PlayerScript : MonoBehaviour
     private void ResetPlayerState()
     {
         //速度を元の速度に戻す
-        walkSpeed = defaultSpeed;
+        p_walkSpeed = p_defaultSpeed;
         //衝突判定をリセット
-        isBlue = false;
-        isYellow = false;
-        isWhite = false;
+        IsBlue = false;
+        IsYellow = false;
+        IsWhite = false;
     }
 
     //モブに衝突した時にダメージを受ける
@@ -272,7 +250,7 @@ public class PlayerScript : MonoBehaviour
         if (blueTimeCount <= slowTime)
         {
             //スロウ効果により減速
-            walkSpeed = slowSpeed;
+            p_walkSpeed = p_slowSpeed;
 
             //心臓の鼓動が遅くなるアニメーション
             heart.GetComponent<HeartUIScript>().SlowHeartBeat();
@@ -281,10 +259,10 @@ public class PlayerScript : MonoBehaviour
         else if (blueTimeCount > slowTime)
         {
             //速度を元の速度に戻す
-            walkSpeed = defaultSpeed;
+            p_walkSpeed = p_defaultSpeed;
 
             //衝突判定リセット
-            isBlue = false;
+            IsBlue = false;
 
             //タイムカウントをリセット
             blueTimeCount = 0;
@@ -305,7 +283,7 @@ public class PlayerScript : MonoBehaviour
         if (yellowTimeCount <= electricshockTime)
         {
             //黄色にぶつかっている
-            isYellow = true;
+            IsYellow = true;
 
             //心臓の鼓動が止まるアニメーション
             heart.GetComponent<HeartUIScript>().StopHeartBeat();
@@ -314,10 +292,10 @@ public class PlayerScript : MonoBehaviour
         else if (yellowTimeCount > electricshockTime)
         {
             //速度を元の速度に戻す
-            walkSpeed = defaultSpeed;
+            p_walkSpeed = p_defaultSpeed;
 
             //衝突判定リセット
-            isYellow = false;
+            IsYellow = false;
 
             //タイムカウントをリセット
             yellowTimeCount = 0;
@@ -337,7 +315,7 @@ public class PlayerScript : MonoBehaviour
         if (whiteTimeCount <= buffTime)
         {
             //スピードアップ効果により加速
-            walkSpeed = buffSpeed;
+            p_walkSpeed = p_buffSpeed;
 
             //心臓の鼓動が早くなるアニメーション
             heart.GetComponent<HeartUIScript>().HighHeartBeat();
@@ -346,10 +324,10 @@ public class PlayerScript : MonoBehaviour
         else if (whiteTimeCount > buffTime)
         {
             //速度を元の速度に戻す
-            walkSpeed = defaultSpeed;
+            p_walkSpeed = p_defaultSpeed;
 
             //衝突判定リセット
-            isWhite = false;
+            IsWhite = false;
 
             //タイムカウントをリセット
             whiteTimeCount = 0;
@@ -380,7 +358,7 @@ public class PlayerScript : MonoBehaviour
             directionalLight.SetActive(true);
 
             //衝突判定リセット
-            isBlack = false;
+            IsBlack = false;
 
             //タイムカウントをリセット
             blackTimeCount = 0;
